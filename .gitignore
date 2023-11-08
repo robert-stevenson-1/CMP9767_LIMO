@@ -49,3 +49,7 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+workshop-workspace/install
+workshop-workspace/log
+workshop-workspace/.vscode
+.vscode
