@@ -53,3 +53,5 @@ workshop-workspace/install
 workshop-workspace/log
 workshop-workspace/.vscode
 .vscode
+assignment-ws/install/
+assignment-ws/log/
