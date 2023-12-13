@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'assignement'
+package_name = 'assignment'
 
 setup(
     name=package_name,
@@ -20,7 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'navigator = assignement.navigator:main'
+            'navigator = assignment.navigator:main',
+            'example_nav_to_pose = assignment_template.example_nav_to_pose:main',
+            'object_detector = assignment_template.object_detector:main',
         ],
     },
 )
