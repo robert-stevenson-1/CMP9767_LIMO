@@ -11,6 +11,8 @@ fi
 # source the limo environment
 source_limo_cmd="source $mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/limo_ros/install/setup.bash"
 $source_limo_cmd
+source_assingment_cmd="source $mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/assignment-ws/install/setup.bash"
+$source_assingment_cmd
 
 # create a alias to kill these sessions
 alias kill_sim="tmux kill-session -t gazebo_sim"
@@ -32,7 +34,8 @@ if [ $? != 0 ]; then
     tmux new-session -s gazebo_sim -d
 fi
 # cmd to launch the simulator world
-sim_cmd="ros2 launch limo_gazebosim limo_gazebo_diff.launch.py world:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/limo_ros/src/limo_gazebosim/worlds/potholes_simple.world"
+# sim_cmd="ros2 launch limo_gazebosim limo_gazebo_diff.launch.py world:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/limo_ros/src/limo_gazebosim/worlds/potholes_simple.world"
+sim_cmd="ros2 launch limo_gazebosim limo_gazebo_diff.launch.py world:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/assignment-ws/src/worlds/potholes_simple.world"
 tmux send-keys -t gazebo_sim "$sim_cmd" Enter
 
 # check if the rviz tmux session exists
@@ -62,7 +65,7 @@ if [ $? != 0 ]; then
     else
     # kill the old sessions and restart a new one
     echo "killed old navigation session"
-    kill_all_tmux
+    kill_nav
     tmux new-session -s navigation -d
 fi
 #source limo in the session
