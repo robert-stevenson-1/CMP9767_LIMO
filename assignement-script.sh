@@ -65,7 +65,8 @@ function restart_nav {
     #source limo in the session
     tmux send-keys -t navigation "$source_limo_cmd" Enter
     
-    navigation_launch_cmd="ros2 launch limo_navigation limo_navigation.launch.py use_sim_time:=true map:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/assignment-ws/src/maps/potholes_20mm.yaml params_file:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/assignment-ws/src/params/nav2_params.yaml"
+    # navigation_launch_cmd="ros2 launch limo_navigation limo_navigation.launch.py use_sim_time:=true map:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/assignment-ws/src/maps/potholes_20mm.yaml params_file:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/assignment-ws/src/params/nav2_params.yaml"
+    navigation_launch_cmd="ros2 launch limo_navigation limo_navigation_assignment.launch.py use_sim_time:=true map:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/assignment-ws/src/maps/potholes_20mm.yaml params_file:=$mount_path/University/Lincoln/MSc/Robot-Programming/CMP9767_LIMO/assignment-ws/src/params/nav2_params.yaml"
     
     tmux send-keys -t navigation "$navigation_launch_cmd" Enter
 }
