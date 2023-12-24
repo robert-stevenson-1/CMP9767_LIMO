@@ -188,15 +188,15 @@ global_costmap:
   global_costmap:
     ros__parameters:
       footprint_padding: 0.00
-      update_frequency: 1.0
+      update_frequency: 10.0 # Orig: 1.0
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: True
-      robot_radius: 0.10 # radius set and used, so no footprint points
+      robot_radius: 0.2 # Orig: 0.10 # radius set and used, so no footprint points
       resolution: 0.02
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
-      obstacle_layer:
+      obstacle_layer: # obstacle_layer is based on the lidar data
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
         observation_sources: scan
@@ -215,16 +215,16 @@ global_costmap:
           marking: True
           data_type: "LaserScan"
           inf_is_valid: false
-      static_layer:
+      static_layer: # data from the SLAM map
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
         enabled: true
         subscribe_to_updates: true
         transform_tolerance: 0.1
-      inflation_layer:
+      inflation_layer: # places an exponential decay functions around obstacles to increase cost to traverse near collision
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.10
+        inflation_radius: 0.2 # Orig: 0.1
         cost_scaling_factor: 1.0
         inflate_unknown: false
         inflate_around_unknown: true
@@ -234,8 +234,8 @@ global_costmap:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
-      publish_frequency: 2.0
+      update_frequency: 20.0 # Orig: 5.0
+      publish_frequency: 4.0 # Orig: 2.0
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: True
@@ -266,7 +266,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.10
+        inflation_radius: 0.20 # Orig: 0.10
         cost_scaling_factor: 1.0
         inflate_unknown: false
         inflate_around_unknown: true
