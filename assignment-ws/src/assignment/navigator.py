@@ -24,16 +24,35 @@ def main():
     rclpy.init()
     navigator = BasicNavigator()
 
-    # TODO: get the init pose
-    # init_pose = PoseStamped()
+    # set the init pose
+    # origin: [-1.51, -1.32, 0]
+    init_pose = PoseStamped()
+    init_pose.header.frame_id = "map"
+    init_pose.header.stamp = navigator.get_clock().now().to_msg()
+    init_pose.pose.orientation.z = 0.707
+    init_pose.pose.orientation.w = 0.707
+    init_pose.pose.position.x = 0.0
+    init_pose.pose.position.y = 0.0
+    init_pose.pose.orientation.z = 1.0
+    init_pose.pose.orientation.w = 0.0
+    navigator.setInitialPose(init_pose)
 
     # TODO: read the goals from a file
     waypoints_coords = [
-        [1.06, -0.17, 0.0],
-        [1.06, -0.95, 0.0],
-        [-1.1, -0.95, 0.0],
-        [-1.1, -0.17, 0.0],
+        [1.06, -0.17, 0.0], # Orientation(0, 0, -0.709153, 0.705054)
+        [1.06, -0.95, 0.0], # Orientation(0, 0, -0.99999, 0.00440896)
+        [-1.1, -0.95, 0.0], # Orientation(0, 0, 0.706825, 0.707388)
+        [-1.1, -0.17, 0.0], # Orientation(0, 0, -0.000398603, 1)
     ]
+
+    waypoint_orientations = [
+        [0.0, 0.0, -0.709153, 0.705054],
+        [0.0, 0.0, -0.99999, 0.00440896],
+        [0.0, 0.0, 0.706825, 0.707388],
+        [0.0, 0.0, -0.000398603, 1.0],
+    ]
+
+    waypoint_data = (waypoints_coords, waypoint_orientations)
 
     # wait for the navigation to fully activate
     navigator.waitUntilNav2Active()
@@ -46,11 +65,15 @@ def main():
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = "map"
         goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-        goal_pose.pose.orientation.z = 1.0
-        goal_pose.pose.orientation.w = 0.0
+        goal_pose.pose.orientation.z = 0.707
+        goal_pose.pose.orientation.w = 0.707
 
         # for each waypoint
-        for coord in waypoints_coords:
+        for coord, orientation in zip(waypoint_data[0], waypoint_data[1]):
+            goal_pose.pose.orientation.x = orientation[0]
+            goal_pose.pose.orientation.y = orientation[1]
+            goal_pose.pose.orientation.z = orientation[2]
+            goal_pose.pose.orientation.w = orientation[3]
             goal_pose.pose.position.x = coord[0]
             goal_pose.pose.position.y = coord[1]
             goal_points.append(deepcopy(goal_pose))
