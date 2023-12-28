@@ -56,7 +56,7 @@ map_server:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 20.0
+    expected_planner_frequency: 15.0
     planner_plugins: ['GridBased']
     GridBased:
       plugin: 'nav2_navfn_planner/NavfnPlanner'
@@ -147,23 +147,22 @@ controller_server:
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: 0.0
+      min_vel_x: -0.02 # Orig: 0.0
       min_vel_y: 0.0
       # Max velocity is in m/s
-      max_vel_x: 0.2 # Orig: 0.26
+      max_vel_x: 0.15 # Orig: 0.26
       max_vel_y: 0.0
       # Max angular velocity is in rad/sec
       max_vel_theta: 1.5 # Orig: 1.0 
-      min_speed_xy: 0.0
-      max_speed_xy: 0.2
-       # Orig: 0.26
+      min_speed_xy: -0.02 # Orig: 0.0
+      max_speed_xy: 0.15 # Orig: 0.26
       min_speed_theta: 0.0
-      acc_lim_x: 2.5
+      acc_lim_x: 4.0 # Orig: 2.5
       acc_lim_y: 0.0
-      acc_lim_theta: 5.0
-      decel_lim_x: -2.5
+      acc_lim_theta: 5.0 # Orig: 3.2
+      decel_lim_x: -4.0 # Orig: -2.5
       decel_lim_y: 0.0
-      decel_lim_theta: -5.0
+      decel_lim_theta: -5.0 # Orig: -3.2
       vx_samples: 20
       vy_samples: 5
       vtheta_samples: 20
