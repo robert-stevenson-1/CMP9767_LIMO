@@ -33,8 +33,8 @@ def main():
     init_pose.pose.orientation.w = 0.707
     init_pose.pose.position.x = 0.0
     init_pose.pose.position.y = 0.0
-    init_pose.pose.orientation.z = 1.0
-    init_pose.pose.orientation.w = 0.0
+    init_pose.pose.orientation.z = -0.000398603
+    init_pose.pose.orientation.w = 1.0
     navigator.setInitialPose(init_pose)
 
     # TODO: read the goals from a file
