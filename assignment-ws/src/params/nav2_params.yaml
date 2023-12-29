@@ -140,22 +140,22 @@ controller_server:
       movement_time_allowance: 10.0
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.15 # Orig: 0.25
       yaw_goal_tolerance: 0.25
       stateful: True
     # DWB controller parameters
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: -0.02 # Orig: 0.0
+      min_vel_x: 0.0 # Orig: 0.0
       min_vel_y: 0.0
       # Max velocity is in m/s
-      max_vel_x: 0.15 # Orig: 0.26
+      max_vel_x: 0.1 # Orig: 0.26
       max_vel_y: 0.0
       # Max angular velocity is in rad/sec
       max_vel_theta: 1.5 # Orig: 1.0 
-      min_speed_xy: -0.02 # Orig: 0.0
-      max_speed_xy: 0.15 # Orig: 0.26
+      min_speed_xy: 0.0 # Orig: 0.0
+      max_speed_xy: 0.1 # Orig: 0.26
       min_speed_theta: 0.0
       acc_lim_x: 4.0 # Orig: 2.5
       acc_lim_y: 0.0
@@ -170,7 +170,7 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
-      xy_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.15 # Orig: 0.25
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -178,8 +178,8 @@ controller_server:
       BaseObstacle.scale: 0.02
       PathAlign.scale: 32.0
       GoalAlign.scale: 24.0
-      PathAlign.forward_point_distance: 0.1
-      GoalAlign.forward_point_distance: 0.1
+      PathAlign.forward_point_distance: 0.3 # Orig: 0.1
+      GoalAlign.forward_point_distance: 0.3 # Orig: 0.1
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
@@ -195,7 +195,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: True
-      robot_radius: 0.15 # Orig: 0.10 # radius set and used, so no footprint points
+      robot_radius: 0.18 # Orig: 0.10 # radius set and used, so no footprint points
       resolution: 0.02
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       obstacle_layer: # obstacle_layer is based on the lidar data
@@ -226,7 +226,7 @@ global_costmap:
       inflation_layer: # places an exponential decay functions around obstacles to increase cost to traverse near collision
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.15 # Orig: 0.1
+        inflation_radius: 0.1 # Orig: 0.1
         cost_scaling_factor: 1.0
         inflate_unknown: false
         inflate_around_unknown: true
@@ -236,6 +236,7 @@ global_costmap:
 local_costmap:
   local_costmap:
     ros__parameters:
+      robot_radius: 0.17 # Orig: 0.10 # radius set and used, so no footprint points
       update_frequency: 10.0 # Orig: 5.0
       publish_frequency: 3.0 # Orig: 2.0
       global_frame: map
