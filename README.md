@@ -21,3 +21,18 @@ A companion repo for the Robot Programming module, CMP9767, MSc RAS
 ## Contribute!
  * If you spot any mistakes, let us know during the workshop, on Teams or by requesting a pull request from your forked repository. 
  * If you are a ROS2 pro and would like to contribute to the improvements of our robot simulator, check out this [list](https://github.com/LCAS/CMP9767_LIMO/wiki/Software-Improvements).
+
+## Assignment Solution Setup Instructions
+
+To clone the repo (and the submodules required):
+
+```text
+git clone --recurse-submodules https://github.com/robert-stevenson-1/CMP9767_LIMO.git
+```
+
+pip requirements:
+
+```text
+pip install ultralytics
+
+```

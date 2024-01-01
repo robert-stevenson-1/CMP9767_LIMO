@@ -55,3 +55,6 @@ workshop-workspace/.vscode
 .vscode
 assignment-ws/install/
 assignment-ws/log/
+yolov8_ros/build/
+yolov8_ros/install/
+yolov8_ros/log/
