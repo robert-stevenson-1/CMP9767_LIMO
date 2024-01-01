@@ -1,3 +1,6 @@
 [submodule "limo_ros"]
 	path = limo_ros
 	url = https://github.com/robert-stevenson-1/limo_ros2
+[submodule "yolov8_ros"]
+	path = yolov8_ros
+	url = https://github.com/robert-stevenson-1/yolov8_ros.git
