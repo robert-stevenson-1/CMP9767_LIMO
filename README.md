@@ -36,3 +36,10 @@ pip requirements:
 pip install ultralytics
 
 ```
+
+### YOLO Pothole datasets
+
+[Dataset 1](https://universe.roboflow.com/pothole-ipd/ipd-pothole-detection)
+
+
+[Dataset 2](https://universe.roboflow.com/pothole-ipd/ipd-pothole-detection-2)

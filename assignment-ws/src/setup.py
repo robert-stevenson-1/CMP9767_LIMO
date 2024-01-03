@@ -21,8 +21,9 @@ setup(
     entry_points={
         'console_scripts': [
             'navigator = assignment.navigator:main',
-            'example_nav_to_pose = assignment_template.example_nav_to_pose:main',
-            'object_detector = assignment_template.object_detector:main',
+            'example_nav_to_pose = assignment.example_nav_to_pose:main',
+            'object_detector = assignment.object_detector:main',
+            'camera_test = assignment.camera_test_node:main',
         ],
     },
 )
