@@ -1,106 +1,258 @@
 import rclpy
 from rclpy.node import Node
 from rclpy import qos
-from cv2 import namedWindow, cvtColor, imshow, inRange, resizeWindow, circle
 
+from cv2 import namedWindow, cvtColor, imshow, inRange, resizeWindow, circle
 from cv2 import destroyAllWindows, startWindowThread
 from cv2 import COLOR_BGR2GRAY, COLOR_BGR2HSV, waitKey
 from cv2 import blur, Canny, resize, INTER_CUBIC
-
 from cv2 import findContours, RETR_TREE, CHAIN_APPROX_SIMPLE, drawContours # for counting the potholes masked
 from cv2 import contourArea # for getting the size of the potholes 
 from cv2 import moments # for getting the center of the potholes
 
 from numpy import mean
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import PoseStamped, Pose, PoseArray
+from tf2_geometry_msgs import do_transform_pose
+from tf2_ros import Buffer, TransformListener
 
+import image_geometry
+import math
 
-class ImageConverter(Node):
+from cv_bridge import CvBridge, CvBridgeError
+
+class PotholeDetector(Node):
+    # aspect ration between color and depth cameras
+    # calculated as (color_horizontal_FOV/color_width) / (depth_horizontal_FOV/depth_width) from the dabai camera parameters
+    # color2depth_aspect_h = (71.0/640) / (67.9/480)
+    # color2depth_aspect_v = (43.7/640) / (45.3/480)
+    color2depth_aspect_h = 1.0
+    color2depth_aspect_v = 1.0
+
+    camera_model = None
+    image_depth_ros = None
+
+    pothole_locations = []
+    depth_values = []
+    pot_locations_posearray = PoseArray()
+
 
     def __init__(self):
-        super().__init__('opencv_test')
+        super().__init__('pothole_detection')
         self.bridge = CvBridge()
+        
+        self.camera_info_sub = self.create_subscription(CameraInfo, '/limo/depth_camera_link/camera_info',
+                                        self.camera_info_callback, 
+                                        qos_profile=qos.qos_profile_sensor_data)
+
         self.image_sub = self.create_subscription(Image, 
                                                     "/limo/depth_camera_link/image_raw",
                                                     self.image_callback,
                                                     qos_profile=qos.qos_profile_sensor_data) # Set QoS Profile
+        self.image_sub = self.create_subscription(Image, '/limo/depth_camera_link/depth/image_raw', 
+                                                  self.image_depth_callback,
+                                                  qos_profile=qos.qos_profile_sensor_data)
         
+        self.pothole_locations_pub = self.create_publisher(PoseArray, 
+                                                         '/limo/pothole_locations',
+                                                         10)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+    def get_tf_transform(self, target_frame, source_frame):
+        try:
+            transform = self.tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+            return transform
+        except Exception as e:
+            self.get_logger().warning(f"Failed to lookup transform: {str(e)}")
+            return None
+
+    def camera_info_callback(self, data):
+        if not self.camera_model:
+            self.camera_model = image_geometry.PinholeCameraModel()
+        self.camera_model.fromCameraInfo(data)
+    def image_depth_callback(self, data):
+        self.image_depth_ros = data
+
+    def add_pothole_location(self, location):
+        # add it to the posearray of the locations 
+        pose = Pose()
+        pose.orientation.w = 1.0
+        pose.position.x = location[0]
+        pose.position.y = location[1]
+        pose.position.z = location[2]
+        self.pot_locations_posearray.poses.append(pose)
+        # transform the coords into the odom frame
+        t = self.get_tf_transform('odom', 'depth_link')
+        p_cam = do_transform_pose(pose, t)
+        # add the pothole location
+        print("(add) Pothole location: ", p_cam.position)
+        self.pothole_locations.append(p_cam.position)
+
     def image_callback(self, data):
-        namedWindow("Image window")
-        namedWindow("masked")
-        namedWindow("canny")
-        cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        cv_image = resize(cv_image, None, fx=0.5, fy=0.5, interpolation = INTER_CUBIC)
-        cv_image_original = cv_image
-        cv_image = cvtColor(cv_image, COLOR_BGR2HSV)
 
-        # max RGB value: 229,74,200
-        # min RGB value: 213,0,197
-        # mask = inRange(cv_image, (205, 0, 190), (235, 80, 255))
-        # max HSV value: 321,48,77
-        # min HSV value: 304,100,84
-        mask = inRange(cv_image, (145, 50, 50), (170, 255, 255))
-        imshow("masked", mask)
-        gray_img = cvtColor(cv_image, COLOR_BGR2GRAY)
-        img3 = Canny(gray_img, 10, 200)
-        imshow("canny", img3)
+        # wait for camera_model and depth image to arrive
+        if self.camera_model is None:
+            return
 
-        imshow("Image window", cv_image)
+        if self.image_depth_ros is None:
+            return
+
+        # covert images to open_cv
+        try:
+            image_color = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            image_depth = self.bridge.imgmsg_to_cv2(self.image_depth_ros, "32FC1")
+        except CvBridgeError as e:
+            print(e)
+
+        image_original = image_color
+        image_color = cvtColor(image_color, COLOR_BGR2HSV)
+
+
+        # The clour pink's HSV values for our mask that are scaled between 0-255 
+        # and have some "padding" either side of the values to minimize the loss of info
+        mask = inRange(image_color, (145, 50, 50), (170, 255, 255))
 
         # count the number of detected potholes that where masked
         potholes, _ = findContours(mask, RETR_TREE, CHAIN_APPROX_SIMPLE)
 
         # get the size of each pothole and the centroids of each object
         pothole_sizes = []
-        pothole_centroids = []
+        pothole_centroids_img = []
+        pothole_centroids_depth = []
         for pothole in potholes:
             pothole_sizes.append(contourArea(pothole))
             # calculate the moments
             p_moments = moments(pothole)
 
             # prevent div by 0
-            if p_moments['m00'] != 0:
-                # Calc the centroid (referenced: https://learnopencv.com/find-center-of-blob-centroid-using-opencv-cpp-python/)
-                x = int(p_moments['m10'] / p_moments['m00'])
-                y = int(p_moments['m01'] / p_moments['m00'])
-                pothole_centroids.append((x, y))
-                # draw the centroids on the original image
-                circle(cv_image_original, (x, y), 2, (0, 255, 0), -1)
+            if p_moments['m00'] == 0:
+                print('No object detected.')
+                return
+            
+            # Calc the centroid (referenced: https://learnopencv.com/find-center-of-blob-centroid-using-opencv-cpp-python/)
+            img_x = int(p_moments['m10'] / p_moments['m00'])
+            img_y = int(p_moments['m01'] / p_moments['m00'])
+            pothole_centroids_img.append((img_x, img_y))
+
+            d_x = image_depth.shape[1]/2 + (img_x - image_color.shape[1]/2)*self.color2depth_aspect_h
+            d_y = image_depth.shape[0]/2 + (img_y - image_color.shape[0]/2)*self.color2depth_aspect_v 
+            pothole_centroids_depth.append((d_x, d_y))
+
+            # get the depth reading at the centroid location
+            depth_value = image_depth[int(d_y), int(d_x)]
+
+            # calculate object's 3d location in camera coords
+            camera_coords = self.camera_model.projectPixelTo3dRay((img_x, img_y)) #project the image coords (x,y) into 3D ray in camera coords 
+            camera_coords = [x/camera_coords[2] for x in camera_coords] # adjust the resulting vector so that z = 1
+            camera_coords = [x*depth_value for x in camera_coords] # multiply the vector by depth
+
+            # NOTE : This could probably be done better 
+            if len(self.pothole_locations) == 0: # if nothing is stored yet, add the location
+                # add the location
+                print("Pothole location added (nothing is stored yet)")
+                # add it to the posearray of the locations 
+                # self.add_pothole_location(camera_coords)
+                pose = Pose()
+                pose.orientation.w = 1.0
+                pose.position.x = camera_coords[0]
+                pose.position.y = camera_coords[1]
+                pose.position.z = camera_coords[2]
+                self.pot_locations_posearray.poses.append(pose)
+                # transform the coords into the odom frame
+                t = self.get_tf_transform('odom', 'depth_link')
+                p_cam = do_transform_pose(pose, t)
+                # add the pothole location
+                print("(add) Pothole location: ", p_cam.position)
+                self.pothole_locations.append(p_cam.position)
+
+                # add the depth value
+                self.depth_values.append(depth_value)            
+            else: # else check if the location is already stored
+                add = True
+
+                # convert to a pose
+                pose = Pose()
+                pose.orientation.w = 1.0
+                pose.position.x = camera_coords[0]
+                pose.position.y = camera_coords[1]
+                pose.position.z = camera_coords[2]
+                # transform the coords into the odom frame
+                t = self.get_tf_transform('odom', 'depth_link')
+                p_cam = do_transform_pose(pose, t)
+
+                
+                # check if the location is already stored
+                for location in self.pothole_locations:
+                    # print(f"(Check) location: [{location.x}, {location.y}, {location.z}] (Check) p_cam: {p_cam.position}")
+                    # Check if the pothole coords are close to already stored points, if so, don't add them, else add them
+                    # do this via calculating the euclidian distance between the two points
+                    dist = math.sqrt((location.x - p_cam.position.x)**2 +
+                                  (location.y - p_cam.position.y)**2 +
+                                    (location.z - p_cam.position.z)**2)
+                    print("Euclidean Distance: ", dist)
+                    if dist < 0.07:
+                    # if (abs(location.x - camera_coords[0]) < 0.5 and 
+                    #     abs(location.y - camera_coords[1]) < 0.5 and
+                    #     abs(location.z - camera_coords[2]) < 0.5):
+                        # don't add the location
+                        print("Pothole location already stored")
+                        add = False
+                        break
+                # point hasn't been added
+                if add:    
+                    # add the location
+                    print("Pothole location added (as not already stored)")
+                    # self.add_pothole_location(camera_coords)
+
+                    # add it to the posearray of the locations 
+                    self.pot_locations_posearray.poses.append(pose)
+                    # add the pothole location
+                    print("(add) Pothole location: ", p_cam.position)
+                    self.pothole_locations.append(p_cam.position)
+
+                    # add the depth value
+                    self.depth_values.append(depth_value)
 
 
-        # draw the potholes on the original image with the contours
+            # draw the centroids on the original image
+            circle(image_original, (img_x, img_y), 2, (0, 255, 0), -1)
+            circle(image_depth, (int(d_x), int(d_y)), 2, (0, 255, 0), -1)
+
+        # publish the pothole locations
+        self.pot_locations_posearray.header.frame_id = 'depth_link'
+        self.pothole_locations_pub.publish(self.pot_locations_posearray)
+        print(f"published {len(self.pot_locations_posearray.poses)} potholes")
+        # draw the pothole's contours on the original image 
         for pothole in potholes:
-            drawContours(cv_image_original, [pothole], -1, (255, 0, 0), 1)
-        # for pothole in potholes:
-        #     # calculate the moments
-        #     p_moments = moments(pothole)
-        #     # prevent div by 0
-        #     if p_moments['m00'] != 0:
-        #         # Calc the centroid (referenced: https://learnopencv.com/find-center-of-blob-centroid-using-opencv-cpp-python/)
-        #         x = int(p_moments['m10'] / p_moments['m00'])
-        #         y = int(p_moments['m01'] / p_moments['m00'])
-        #     circle(cv_image_original, (x, y), 2, (0, 255, 0), -1)
+            drawContours(image_original, [pothole], -1, (255, 0, 0), 1)
         
-        imshow("Original Image window", cv_image_original)
         
         # resize the windows
+        image_depth *= 1.0/10.0 # scale for visualisation (max range 10.0 m)
+        # imshow("masked", mask)
+        # imshow("Image window", image_color)
+        imshow("Original Image window", image_original)
+        imshow("Depth Image window", image_depth)
         resizeWindow('Original Image window', 600,600)
         resizeWindow('Image window', 600,600)
         resizeWindow('masked', 600,600)
-        resizeWindow('canny', 600,600)
+        # resizeWindow('canny', 600,600)
+        resizeWindow('Depth Image window', 600,600)
         
-        print(f"Detected potholes: {len(potholes)}")
-        print(f"pothole sizes: {pothole_sizes}")
-        print(f"pothole centroids: {pothole_centroids}")
+        print(f"Detected potholes: {len(self.pothole_locations)}")
+        print(f"pothole locations: {self.pothole_locations}")
+        print(f"depth values: {self.depth_values}")
+        print(f"pothole centroids: {pothole_centroids_img}")
         waitKey(1)
 
 def main(args=None):
     rclpy.init(args=args)
-    image_converter = ImageConverter()
-    rclpy.spin(image_converter)
+    pothole_detector = PotholeDetector()
+    rclpy.spin(pothole_detector)
 
-    image_converter.destroy_node()
+    pothole_detector.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':

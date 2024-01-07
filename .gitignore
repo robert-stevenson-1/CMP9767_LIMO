@@ -60,3 +60,6 @@ yolov8_ros/install/
 yolov8_ros/log/
 yolov8_ros/yolov8m.pt
 datasets/
+uol_cmp9767_tutorial/install/
+uol_cmp9767_tutorial/build/
+uol_cmp9767_tutorial/log/
