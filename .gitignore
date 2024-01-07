@@ -59,3 +59,4 @@ yolov8_ros/build/
 yolov8_ros/install/
 yolov8_ros/log/
 yolov8_ros/yolov8m.pt
+datasets/
