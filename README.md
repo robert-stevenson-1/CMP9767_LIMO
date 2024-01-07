@@ -34,7 +34,7 @@ pip requirements:
 
 ```text
 pip install ultralytics
-
+pip install clearml
 ```
 
 ### YOLO Pothole datasets
