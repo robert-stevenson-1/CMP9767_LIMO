@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy import qos
 
-from cv2 import namedWindow, cvtColor, imshow, inRange, resizeWindow, circle
+from cv2 import namedWindow, cvtColor, imshow, inRange, resizeWindow, circle, FONT_HERSHEY_SIMPLEX, putText
 from cv2 import destroyAllWindows, startWindowThread
 from cv2 import COLOR_BGR2GRAY, COLOR_BGR2HSV, waitKey
 from cv2 import blur, Canny, resize, INTER_CUBIC
@@ -37,6 +37,8 @@ class PotholeDetector(Node):
     depth_values = []
     pot_locations_posearray = PoseArray()
 
+    # font which we will be using to display pothole count 
+    font = FONT_HERSHEY_SIMPLEX 
 
     def __init__(self):
         super().__init__('pothole_detection')
@@ -106,7 +108,7 @@ class PotholeDetector(Node):
         except CvBridgeError as e:
             print(e)
 
-        image_original = image_color
+        image_annotated = image_color
         image_color = cvtColor(image_color, COLOR_BGR2HSV)
 
 
@@ -192,10 +194,8 @@ class PotholeDetector(Node):
                                   (location.y - p_cam.position.y)**2 +
                                     (location.z - p_cam.position.z)**2)
                     print("Euclidean Distance: ", dist)
-                    if dist < 0.07:
-                    # if (abs(location.x - camera_coords[0]) < 0.5 and 
-                    #     abs(location.y - camera_coords[1]) < 0.5 and
-                    #     abs(location.z - camera_coords[2]) < 0.5):
+                    if dist < 0.11: # if the distance is less than 0.11m, don't add the location
+                    # if (abs(location.x - camera_coords[0]) < 0.5 a
                         # don't add the location
                         print("Pothole location already stored")
                         add = False
@@ -207,7 +207,7 @@ class PotholeDetector(Node):
                     # self.add_pothole_location(camera_coords)
 
                     # add it to the posearray of the locations 
-                    self.pot_locations_posearray.poses.append(pose)
+                    self.pot_locations_posearray.poses.append(p_cam)
                     # add the pothole location
                     print("(add) Pothole location: ", p_cam.position)
                     self.pothole_locations.append(p_cam.position)
@@ -217,29 +217,27 @@ class PotholeDetector(Node):
 
 
             # draw the centroids on the original image
-            circle(image_original, (img_x, img_y), 2, (0, 255, 0), -1)
+            circle(image_annotated, (img_x, img_y), 2, (0, 255, 0), -1)
             circle(image_depth, (int(d_x), int(d_y)), 2, (0, 255, 0), -1)
 
         # publish the pothole locations
-        self.pot_locations_posearray.header.frame_id = 'depth_link'
+        self.pot_locations_posearray.header.frame_id = 'odom'
         self.pothole_locations_pub.publish(self.pot_locations_posearray)
         print(f"published {len(self.pot_locations_posearray.poses)} potholes")
         # draw the pothole's contours on the original image 
         for pothole in potholes:
-            drawContours(image_original, [pothole], -1, (255, 0, 0), 1)
+            drawContours(image_annotated, [pothole], -1, (255, 0, 0), 1)
         
         
         # resize the windows
         image_depth *= 1.0/10.0 # scale for visualisation (max range 10.0 m)
-        # imshow("masked", mask)
-        # imshow("Image window", image_color)
-        imshow("Original Image window", image_original)
-        imshow("Depth Image window", image_depth)
-        resizeWindow('Original Image window', 600,600)
-        resizeWindow('Image window', 600,600)
-        resizeWindow('masked', 600,600)
-        # resizeWindow('canny', 600,600)
-        resizeWindow('Depth Image window', 600,600)
+
+        # draw counter of potholes to image deteion window
+        image_annotated = putText(image_annotated, f"Detected potholes: {len(self.pothole_locations)}", (10, 30), FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        imshow("Detection Image Window", image_annotated)
+        imshow("Depth Image Window", image_depth)
+        resizeWindow('Detection Image Window', 600,600)
+        resizeWindow('Depth Image Window', 600,600)
         
         print(f"Detected potholes: {len(self.pothole_locations)}")
         print(f"pothole locations: {self.pothole_locations}")
