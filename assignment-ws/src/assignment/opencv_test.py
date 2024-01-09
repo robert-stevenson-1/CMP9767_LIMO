@@ -30,6 +30,10 @@ class PotholeDetector(Node):
     color2depth_aspect_h = 1.0
     color2depth_aspect_v = 1.0
 
+    filter_radius = 0.13 # 0.11 is currently the best value
+    min_depth = 0.3
+    max_depth = 1.0
+
     camera_model = None
     image_depth_ros = None
 
@@ -108,6 +112,10 @@ class PotholeDetector(Node):
         except CvBridgeError as e:
             print(e)
 
+        # crop the image to the middle 3rd of the height
+        # image_color = image_color[160: 440, 0: 640] 
+        # image_depth = image_depth[160: 440, 0: 640]
+
         image_annotated = image_color
         image_color = cvtColor(image_color, COLOR_BGR2HSV)
 
@@ -120,11 +128,11 @@ class PotholeDetector(Node):
         potholes, _ = findContours(mask, RETR_TREE, CHAIN_APPROX_SIMPLE)
 
         # get the size of each pothole and the centroids of each object
-        pothole_sizes = []
+        # pothole_sizes = []
         pothole_centroids_img = []
         pothole_centroids_depth = []
         for pothole in potholes:
-            pothole_sizes.append(contourArea(pothole))
+            # pothole_sizes.append(contourArea(pothole))
             # calculate the moments
             p_moments = moments(pothole)
 
@@ -145,6 +153,12 @@ class PotholeDetector(Node):
             # get the depth reading at the centroid location
             depth_value = image_depth[int(d_y), int(d_x)]
 
+            # accept of reject a pothole based on if the depth reading is within a certain range
+            if depth_value < self.min_depth or depth_value > self.max_depth:
+                # remove the pothole
+                # potholes.remove(pothole)
+                continue
+
             # calculate object's 3d location in camera coords
             camera_coords = self.camera_model.projectPixelTo3dRay((img_x, img_y)) #project the image coords (x,y) into 3D ray in camera coords 
             camera_coords = [x/camera_coords[2] for x in camera_coords] # adjust the resulting vector so that z = 1
@@ -161,10 +175,10 @@ class PotholeDetector(Node):
                 pose.position.x = camera_coords[0]
                 pose.position.y = camera_coords[1]
                 pose.position.z = camera_coords[2]
-                self.pot_locations_posearray.poses.append(pose)
                 # transform the coords into the odom frame
                 t = self.get_tf_transform('odom', 'depth_link')
                 p_cam = do_transform_pose(pose, t)
+                self.pot_locations_posearray.poses.append(p_cam)
                 # add the pothole location
                 print("(add) Pothole location: ", p_cam.position)
                 self.pothole_locations.append(p_cam.position)
@@ -194,7 +208,7 @@ class PotholeDetector(Node):
                                   (location.y - p_cam.position.y)**2 +
                                     (location.z - p_cam.position.z)**2)
                     print("Euclidean Distance: ", dist)
-                    if dist < 0.11: # if the distance is less than 0.11m, don't add the location
+                    if dist < self.filter_radius: # if the distance is less than 0.11m, don't add the location
                     # if (abs(location.x - camera_coords[0]) < 0.5 a
                         # don't add the location
                         print("Pothole location already stored")
@@ -218,7 +232,7 @@ class PotholeDetector(Node):
 
             # draw the centroids on the original image
             circle(image_annotated, (img_x, img_y), 2, (0, 255, 0), -1)
-            circle(image_depth, (int(d_x), int(d_y)), 2, (0, 255, 0), -1)
+            circle(image_depth, (int(d_x), int(d_y)), 2, (255, 255, 255), -1)
 
         # publish the pothole locations
         self.pot_locations_posearray.header.frame_id = 'odom'
@@ -230,7 +244,7 @@ class PotholeDetector(Node):
         
         
         # resize the windows
-        image_depth *= 1.0/10.0 # scale for visualisation (max range 10.0 m)
+        image_depth *= 1.0/5.0 # scale for visualisation (max range 10.0 m)
 
         # draw counter of potholes to image deteion window
         image_annotated = putText(image_annotated, f"Detected potholes: {len(self.pothole_locations)}", (10, 30), FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
