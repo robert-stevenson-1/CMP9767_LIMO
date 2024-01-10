@@ -1,3 +1,25 @@
+##############
+# pothole_detector.py
+#
+# Author: Robert Stevenson
+# Date: 06-01-2024
+#
+# This file contains the code for the Pothole Detector.
+# Used OpenCV and ROS to detect the simple pothole world pink coloured potholes that are on
+# the simulated environments road surfaces and records the position of each pothole seen by processing and
+# transforming the image and depth data received from the cameras and publishing it to the rest of 
+# the ROS network as a PoseArray.
+#
+# This incorporates the the knowledge learned from the sources workshop and applies them with additional
+# techniques in order to carry out the task of detecting potholes in the environment.
+# This include the decision to filter duplicate pothole locations by using the Euclidean distance between
+# the new and existing pothole locations and a defined filter radius.
+# Additionally, we restrict whether to record the pothole locations that where detected but are not within
+# the defined min and max depth value range.
+# This allow for more control of the acceptable noise and how we can reduce it in so that the positions
+# of the potholes are more accurate and reliable during operations. 
+##############
+
 import rclpy
 from rclpy.node import Node
 from rclpy import qos
