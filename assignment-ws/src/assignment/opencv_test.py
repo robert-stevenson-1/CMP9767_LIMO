@@ -30,9 +30,9 @@ class PotholeDetector(Node):
     color2depth_aspect_h = 1.0
     color2depth_aspect_v = 1.0
 
-    filter_radius = 0.13 # 0.11 is currently the best value
+    filter_radius = 0.15 # 0.15 is currently the best value
     min_depth = 0.3
-    max_depth = 1.0
+    max_depth = 1.15
 
     camera_model = None
     image_depth_ros = None
@@ -171,7 +171,8 @@ class PotholeDetector(Node):
                 # add it to the posearray of the locations 
                 # self.add_pothole_location(camera_coords)
                 pose = Pose()
-                pose.orientation.w = 1.0
+                pose.orientation.z = 0.707
+                pose.orientation.w = 0.707
                 pose.position.x = camera_coords[0]
                 pose.position.y = camera_coords[1]
                 pose.position.z = camera_coords[2]
@@ -190,7 +191,8 @@ class PotholeDetector(Node):
 
                 # convert to a pose
                 pose = Pose()
-                pose.orientation.w = 1.0
+                pose.orientation.z = 0.707
+                pose.orientation.w = 0.707
                 pose.position.x = camera_coords[0]
                 pose.position.y = camera_coords[1]
                 pose.position.z = camera_coords[2]
@@ -205,7 +207,7 @@ class PotholeDetector(Node):
                     # Check if the pothole coords are close to already stored points, if so, don't add them, else add them
                     # do this via calculating the euclidian distance between the two points
                     dist = math.sqrt((location.x - p_cam.position.x)**2 +
-                                  (location.y - p_cam.position.y)**2 +
+                                    (location.y - p_cam.position.y)**2 +
                                     (location.z - p_cam.position.z)**2)
                     print("Euclidean Distance: ", dist)
                     if dist < self.filter_radius: # if the distance is less than 0.11m, don't add the location
@@ -248,15 +250,17 @@ class PotholeDetector(Node):
 
         # draw counter of potholes to image deteion window
         image_annotated = putText(image_annotated, f"Detected potholes: {len(self.pothole_locations)}", (10, 30), FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        image_annotated = resize(image_annotated, (0,0), fx=0.5, fy=0.5)
         imshow("Detection Image Window", image_annotated)
+        image_depth = resize(image_depth, (0,0), fx=0.5, fy=0.5)
         imshow("Depth Image Window", image_depth)
         resizeWindow('Detection Image Window', 600,600)
         resizeWindow('Depth Image Window', 600,600)
         
         print(f"Detected potholes: {len(self.pothole_locations)}")
         print(f"pothole locations: {self.pothole_locations}")
-        print(f"depth values: {self.depth_values}")
-        print(f"pothole centroids: {pothole_centroids_img}")
+        # print(f"depth values: {self.depth_values}")
+        # print(f"pothole centroids: {pothole_centroids_img}")
         waitKey(1)
 
 def main(args=None):
