@@ -10,7 +10,7 @@
 # transforming the image and depth data received from the cameras and publishing it to the rest of 
 # the ROS network as a PoseArray.
 #
-# This incorporates the the knowledge learned from the sources workshop and applies them with additional
+# This incorporates the knowledge learned from the courses workshop and applies them with additional
 # techniques in order to carry out the task of detecting potholes in the environment.
 # This include the decision to filter duplicate pothole locations by using the Euclidean distance between
 # the new and existing pothole locations and a defined filter radius.
