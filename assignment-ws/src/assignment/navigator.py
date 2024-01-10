@@ -29,8 +29,6 @@ def main():
     init_pose = PoseStamped()
     init_pose.header.frame_id = "map"
     init_pose.header.stamp = navigator.get_clock().now().to_msg()
-    init_pose.pose.orientation.z = 0.707
-    init_pose.pose.orientation.w = 0.707
     init_pose.pose.position.x = 0.0
     init_pose.pose.position.y = 0.0
     init_pose.pose.orientation.z = -0.000398603
@@ -39,16 +37,18 @@ def main():
 
     # TODO: read the goals from a file
     waypoints_coords = [
-        [1.06, -0.17, 0.0], # Orientation(0, 0, -0.709153, 0.705054)
-        [1.06, -0.95, 0.0], # Orientation(0, 0, -0.99999, 0.00440896)
-        [-1.1, -0.95, 0.0], # Orientation(0, 0, 0.706825, 0.707388)
-        [-1.1, -0.17, 0.0], # Orientation(0, 0, -0.000398603, 1)
+        [1.05, -0.17, 0.0], # Orientation(0, 0, -0.709153, 0.705054)
+        [1.05, -0.92, 0.0], # Orientation(0, 0, -0.99999, 0.00440896)
+        [-1.05, -0.92, 0.0], # Orientation(0, 0, 0.706825, 0.707388)
+        [-1.05, -0.17, 0.0], # Orientation(0, 0, -0.000398603, 1)
+        [0.0, 0.0, 0.0],
     ]
 
     waypoint_orientations = [
         [0.0, 0.0, -0.709153, 0.705054],
         [0.0, 0.0, -0.99999, 0.00440896],
         [0.0, 0.0, 0.706825, 0.707388],
+        [0.0, 0.0, -0.000398603, 1.0],
         [0.0, 0.0, -0.000398603, 1.0],
     ]
 
