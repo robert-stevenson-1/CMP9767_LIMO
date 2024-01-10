@@ -15,16 +15,13 @@ setup(
     zip_safe=True,
     maintainer='robert',
     maintainer_email='78357805+robert-stevenson-1@users.noreply.github.com',
-    description='Package containing robot programming assignment',
+    description='Package containing robot programming assignment nodes',
     license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'navigator = assignment.navigator:main',
-            'example_nav_to_pose = assignment.example_nav_to_pose:main',
-            'object_detector = assignment.object_detector:main',
-            'camera_test = assignment.camera_test_node:main',
-            'opencv_test = assignment.opencv_test:main',
+            'pothole_detector = assignment.pothole_detector:main',
         ],
     },
 )
