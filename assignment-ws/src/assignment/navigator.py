@@ -7,8 +7,7 @@
 # This file contains the code for the a simple navigator that follows a set of waypoint
 # goals.
 # This is based on the example found in the nav2 documentation with a few modifications to
-# suit the purpose of this project/assignment goals, such as reading the goals list from
-# a file.
+# suit the purpose of this project/assignment goals.
 #
 # Example source: https://github.com/ros-planning/navigation2/blob/main/nav2_simple_commander/nav2_simple_commander/example_waypoint_follower.py
 ##############
@@ -16,7 +15,6 @@
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 import rclpy
-from rclpy.duration import Duration
 from copy import deepcopy
 
 
@@ -25,7 +23,6 @@ def main():
     navigator = BasicNavigator()
 
     # set the init pose
-    # origin: [-1.51, -1.32, 0]
     init_pose = PoseStamped()
     init_pose.header.frame_id = "map"
     init_pose.header.stamp = navigator.get_clock().now().to_msg()
@@ -35,7 +32,7 @@ def main():
     init_pose.pose.orientation.w = 1.0
     navigator.setInitialPose(init_pose)
 
-    # TODO: read the goals from a file
+    # TODO: read the goals from a file?
     waypoints_coords = [
         [1.05, -0.17, 0.0], # Orientation(0, 0, -0.709153, 0.705054)
         [1.05, -0.92, 0.0], # Orientation(0, 0, -0.99999, 0.00440896)
@@ -43,7 +40,6 @@ def main():
         [-1.05, -0.17, 0.0], # Orientation(0, 0, -0.000398603, 1)
         [0.0, 0.0, 0.0],
     ]
-
     waypoint_orientations = [
         [0.0, 0.0, -0.709153, 0.705054],
         [0.0, 0.0, -0.99999, 0.00440896],
@@ -51,7 +47,6 @@ def main():
         [0.0, 0.0, -0.000398603, 1.0],
         [0.0, 0.0, -0.000398603, 1.0],
     ]
-
     waypoint_data = (waypoints_coords, waypoint_orientations)
 
     # wait for the navigation to fully activate
@@ -79,10 +74,9 @@ def main():
             goal_points.append(deepcopy(goal_pose))
 
         # start the navigation
-        nav_start = navigator.get_clock().now()
         navigator.followWaypoints(goal_points)
 
-        # TODO: do stuff while navigating if required. (eg. print current waypoint)
+        # while navigating print current waypoint progress  
         point_index = 0
         while not navigator.isTaskComplete():
             point_index = point_index + 1
@@ -95,7 +89,7 @@ def main():
                     + str(len(goal_points))
                 )
 
-        # TODO: do stuff when navigation is complete
+        # Respond to stuff when navigation is complete or otherwise
         nav_result = navigator.getResult()
         if nav_result == TaskResult.SUCCEEDED:
             print("Navigation Succeeded")
